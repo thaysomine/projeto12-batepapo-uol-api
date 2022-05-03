@@ -131,4 +131,23 @@ app.get('/messages', async (req, res) => {
     }
 });
 
+// post do status
+app.post('/status', async (req, res) => {
+    const user = req.headers.user;
+    try {
+        const checkParticipant = await database.collection('participants').findOne({name: user});
+        if (!checkParticipant) {
+            console.log('Participante não cadastrado');
+            res.sendStatus(404);
+        }
+        await dbParticipants.updateOne(
+            {name: user},
+            {$set: {lastStatus: Date.now()}}
+        );
+        res.send(200);
+    } catch {
+        res.send('Erro ao buscar participante');
+    }
+});
+
 app.listen(5000);
