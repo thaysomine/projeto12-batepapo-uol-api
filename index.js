@@ -124,7 +124,8 @@ app.get('/messages', async (req, res) => {
     try {
         const showMessages = await database.collection('messages').find({$or:[{to:'Todos'}, {from:user}, {to:user}]}).toArray();
         console.log(showMessages);
-        limit ? res.send(showMessages.slice(0, limit)) : res.send(showMessages); // TODO: checar verificação de limite
+
+        limit ? res.send(showMessages.slice(- limit)) : res.send(showMessages); 
     } catch(err) {
         console.log("deu erro get/messages");
         res.send("Erro ao buscar mensagens" + err);
@@ -149,5 +150,28 @@ app.post('/status', async (req, res) => {
         res.send('Erro ao buscar participante');
     }
 });
+
+// remoçao de usuarios inativos
+setInterval(async () => {
+    try{
+        let active = await database.collection('participants').find().toArray();
+        active.forEach(async (participant) => {
+            const time = Date.now()
+            let timeDifference = time - participant.lastStatus
+            if (timeDifference > 10000){
+                await database.collection('participants').deleteOne({name: participant.name});
+                await database.collection('message').insertOne({
+                    from: participant.name, 
+                    to: 'Todos', 
+                    text: 'sai da sala...', 
+                    type: 'status', 
+                    time: dayjs().format('HH:mm:ss')
+                });
+            }
+        });
+    }catch (err){
+        res.send(err);
+    }
+}, 15000)
 
 app.listen(5000);
